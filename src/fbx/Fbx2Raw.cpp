@@ -848,11 +848,6 @@ static void ReadAnimations(RawModel& raw, FbxScene* pScene, const GltfOptions& o
         const FbxVector4 localScale = computeLocalScale(pNode, pTime);
 
 
-	if (!optAnimation) {
-          hasTranslation = true;
-          hasRotation = true;
-          hasScale = true;
-        } else {
           hasTranslation |=
             (fabs(localTranslation[0] - baseTranslation[0]) > epsilon ||
             fabs(localTranslation[1] - baseTranslation[1]) > epsilon ||
@@ -866,7 +861,7 @@ static void ReadAnimations(RawModel& raw, FbxScene* pScene, const GltfOptions& o
               (fabs(localScale[0] - baseScaling[0]) > epsilon ||
               fabs(localScale[1] - baseScaling[1]) > epsilon ||
               fabs(localScale[2] - baseScaling[2]) > epsilon);
-        }
+
         channel.translations.push_back(toVec3f(localTranslation) * scaleFactor);
         channel.rotations.push_back(toQuatf(localRotation));
         channel.scales.push_back(toVec3f(localScale));
@@ -943,19 +938,20 @@ static void ReadAnimations(RawModel& raw, FbxScene* pScene, const GltfOptions& o
       }
 
       if (hasTranslation || hasRotation || hasScale || hasMorphs) {
-        if (!hasTranslation) {
-          channel.translations.clear();
+        if (optAnimation) {
+          if (!hasTranslation) {
+            channel.translations.clear();
+          }
+          if (!hasRotation) {
+            channel.rotations.clear();
+          }
+          if (!hasScale) {
+            channel.scales.clear();
+          }
+          if (!hasMorphs) {
+            channel.weights.clear();
+          }
         }
-        if (!hasRotation) {
-          channel.rotations.clear();
-        }
-        if (!hasScale) {
-          channel.scales.clear();
-        }
-        if (!hasMorphs) {
-          channel.weights.clear();
-        }
-
         animation.channels.emplace_back(channel);
 
         totalSizeInBytes += channel.translations.size() * sizeof(channel.translations[0]) +
