@@ -824,7 +824,7 @@ static void ReadAnimations(RawModel& raw, FbxScene* pScene, const GltfOptions& o
     size_t totalSizeInBytes = 0;
 
     const int nodeCount = pScene->GetNodeCount();
-    for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
+    for (int nodeIndex = 1; nodeIndex < nodeCount; nodeIndex++) {
       FbxNode* pNode = pScene->GetNode(nodeIndex);
       const FbxAMatrix baseTransform = pNode->EvaluateLocalTransform();
       const FbxVector4 baseTranslation = baseTransform.GetT();
@@ -937,7 +937,7 @@ static void ReadAnimations(RawModel& raw, FbxScene* pScene, const GltfOptions& o
         }
       }
 
-      if (hasTranslation || hasRotation || hasScale || hasMorphs) {
+      if (!optAnimation || hasTranslation || hasRotation || hasScale || hasMorphs) {
         if (optAnimation) {
           if (!hasTranslation) {
             channel.translations.clear();
