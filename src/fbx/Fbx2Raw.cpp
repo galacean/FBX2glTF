@@ -1164,14 +1164,11 @@ bool LoadFBXFile(
   // this is always 0.01, but let's opt for clarity.
   scaleFactor = FbxSystemUnit::m.GetConversionFactorFrom(FbxSystemUnit::cm);
   FbxNode* rootNode = pScene->GetRootNode();
-  if (rootNode->GetChildCount() > 1) {
-    ReadNodeHierarchy(raw, pScene, rootNode, 0, "");
-    ReadNodeAttributes(raw, pScene, rootNode, textureLocations);
-  } else {
-    ReadNodeHierarchy(raw, pScene, rootNode->GetChild(0), 0, "");
-    ReadNodeAttributes(raw, pScene, rootNode->GetChild(0), textureLocations);
+   for (int i = 0; i < rootNode->GetChildCount(); i++) {
+    ReadNodeHierarchy(raw, pScene, rootNode->GetChild(i), 0, "");
+    ReadNodeAttributes(raw, pScene, rootNode->GetChild(i), textureLocations);
   }
-  ReadAnimations(raw, pScene, options);
+   ReadAnimations(raw, pScene, options);
 
   pScene->Destroy();
   pManager->Destroy();

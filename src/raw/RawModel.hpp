@@ -399,10 +399,10 @@ class RawModel {
   int AddNode(const RawNode& node);
   int AddNode(const long id, const char* name, const long parentId);
   void SetRootNode(const long nodeId) {
-    rootNodeId = nodeId;
+    rootNodeIds.push_back(nodeId);
   }
-  const long GetRootNode() const {
-    return rootNodeId;
+  const long& GetRootNode() const {
+    return rootNodeIds;
   }
 
   // Remove unused vertices, textures or materials after removing vertex attributes, textures,
@@ -518,7 +518,6 @@ class RawModel {
  private:
   Vec3f getFaceNormal(int verts[3]) const;
 
-  long rootNodeId;
   int vertexAttributes;
   std::unordered_map<RawVertex, int, VertexHasher> vertexHash;
   std::vector<RawVertex> vertices;
@@ -530,6 +529,7 @@ class RawModel {
   std::vector<RawAnimation> animations;
   std::vector<RawCamera> cameras;
   std::vector<RawNode> nodes;
+  std::vector<long> rootNodeIds;
 };
 
 template <typename _attrib_type_>

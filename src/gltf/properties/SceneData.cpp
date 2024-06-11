@@ -10,8 +10,8 @@
 
 #include "NodeData.hpp"
 
-SceneData::SceneData(std::string name, const NodeData& rootNode)
-    : Holdable(), name(std::move(name)), nodes({rootNode.ix}) {}
+SceneData::SceneData(std::string name)
+    : Holdable(), name(std::move(name)) {}
 
 json SceneData::serialize() const {
   assert(nodes.size() <= 1);

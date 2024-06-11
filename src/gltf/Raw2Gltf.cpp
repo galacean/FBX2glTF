@@ -757,8 +757,13 @@ ModelData* Raw2Gltf(
     }
   }
 
-  NodeData& rootNode = require(nodesById, raw.GetRootNode());
-  const SceneData& rootScene = *gltf->scenes.hold(new SceneData(DEFAULT_SCENE_NAME, rootNode));
+  const SceneData& rootScene = *gltf->scenes.hold(new SceneData(DEFAULT_SCENE_NAME));
+  const std::vector<long> ids =raw.GetRootNode();
+  
+  for (size_t i = 0; i < ids.size(); i++) {
+    NodeData& rootNode = require(nodesById, ids[i]);
+    rootScene.nodes.push_back(rootNode.ix);
+  }
 
   if (options.outputBinary) {
     // note: glTF binary is little-endian
