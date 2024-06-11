@@ -401,7 +401,7 @@ class RawModel {
   void SetRootNode(const long nodeId) {
     rootNodeIds.push_back(nodeId);
   }
-  const long& GetRootNode() const {
+  const std::vector<long>& GetRootNode() const {
     return rootNodeIds;
   }
 
