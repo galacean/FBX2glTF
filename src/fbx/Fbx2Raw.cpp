@@ -830,10 +830,42 @@ static void ReadAnimations(RawModel& raw, FbxScene* pScene, const GltfOptions& o
       const FbxVector4 baseTranslation = baseTransform.GetT();
       const FbxQuaternion baseRotation = baseTransform.GetQ();
       const FbxVector4 baseScaling = computeLocalScale(pNode);
-      bool hasTranslation = false;
-      bool hasRotation = false;
-      bool hasScale = false;
+      FbxAnimCurveNode* translationCurveNode = pNode->LclTranslation.GetCurveNode();
+      FbxAnimCurveNode* rotationCurveNode = pNode->LclRotation.GetCurveNode();
+      FbxAnimCurveNode* scalingCurveNode = pNode->LclScaling.GetCurveNode();
+
+      bool hasTranslation = !!translationCurveNode;
+      bool hasRotation = !!rotationCurveNode;
+      bool hasScale = !!scalingCurveNode;
       bool hasMorphs = false;
+
+      FbxMesh* mesh = pNode->GetMesh();
+      if (mesh) {
+        int deformerCount = mesh->GetDeformerCount(FbxDeformer::eBlendShape);
+        for (int i = 0; i < deformerCount; ++i) {
+          FbxBlendShape* blendShape = static_cast<FbxBlendShape*>(mesh->GetDeformer(i, FbxDeformer::eBlendShape));
+          int channelCount = blendShape->GetBlendShapeChannelCount();
+          for (int j = 0; j < channelCount; ++j) {
+            FbxBlendShapeChannel* channel = blendShape->GetBlendShapeChannel(j);
+            if (channel && channel->GetTargetShapeCount() > 0) {
+              for (int layerIx = 0; layerIx < pAnimStack->GetMemberCount(); layerIx++) {
+                FbxAnimLayer* layer = pAnimStack->GetMember<FbxAnimLayer>(layerIx);
+                FbxAnimCurve* curve = mesh->GetShapeChannel(i, j, layer);
+                if (curve) {
+                  hasMorphs = true;
+                  break;
+                }
+              }
+              if (hasMorphs) {
+                break;
+              }
+            }
+          }
+          if (hasMorphs) {
+            break;
+          }
+        }
+      }
 
       RawChannel channel;
       channel.nodeIndex = raw.GetNodeById(pNode->GetUniqueID());
@@ -846,21 +878,6 @@ static void ReadAnimations(RawModel& raw, FbxScene* pScene, const GltfOptions& o
         const FbxVector4 localTranslation = localTransform.GetT();
         const FbxQuaternion localRotation = localTransform.GetQ();
         const FbxVector4 localScale = computeLocalScale(pNode, pTime);
-
-
-          hasTranslation |=
-            (fabs(localTranslation[0] - baseTranslation[0]) > epsilon ||
-            fabs(localTranslation[1] - baseTranslation[1]) > epsilon ||
-            fabs(localTranslation[2] - baseTranslation[2]) > epsilon);
-          hasRotation |=
-              (fabs(localRotation[0] - baseRotation[0]) > epsilon ||
-              fabs(localRotation[1] - baseRotation[1]) > epsilon ||
-              fabs(localRotation[2] - baseRotation[2]) > epsilon ||
-              fabs(localRotation[3] - baseRotation[3]) > epsilon);
-          hasScale |=
-              (fabs(localScale[0] - baseScaling[0]) > epsilon ||
-              fabs(localScale[1] - baseScaling[1]) > epsilon ||
-              fabs(localScale[2] - baseScaling[2]) > epsilon);
 
         channel.translations.push_back(toVec3f(localTranslation) * scaleFactor);
         channel.rotations.push_back(toQuatf(localRotation));
@@ -915,7 +932,6 @@ static void ReadAnimations(RawModel& raw, FbxScene* pScene, const GltfOptions& o
                 if (!std::isnan(result)) {
                   // we're transitioning into targetIx
                   channel.weights.push_back(result);
-                  hasMorphs = true;
                   continue;
                 }
                 if (targetIx != targetCount - 1) {
@@ -923,7 +939,6 @@ static void ReadAnimations(RawModel& raw, FbxScene* pScene, const GltfOptions& o
                   if (!std::isnan(result)) {
                     // we're transitioning AWAY from targetIx
                     channel.weights.push_back(1.0f - result);
-                    hasMorphs = true;
                     continue;
                   }
                 }
@@ -937,20 +952,18 @@ static void ReadAnimations(RawModel& raw, FbxScene* pScene, const GltfOptions& o
         }
       }
 
-      if (!optAnimation || hasTranslation || hasRotation || hasScale || hasMorphs) {
-        if (optAnimation) {
-          if (!hasTranslation) {
-            channel.translations.clear();
-          }
-          if (!hasRotation) {
-            channel.rotations.clear();
-          }
-          if (!hasScale) {
-            channel.scales.clear();
-          }
-          if (!hasMorphs) {
-            channel.weights.clear();
-          }
+      if (hasTranslation || hasRotation || hasScale || hasMorphs) {
+        if (!hasTranslation) {
+          channel.translations.clear();
+        }
+        if (!hasRotation) {
+          channel.rotations.clear();
+        }
+        if (!hasScale) {
+          channel.scales.clear();
+        }
+        if (!hasMorphs) {
+          channel.weights.clear();
         }
         animation.channels.emplace_back(channel);
 
@@ -1150,11 +1163,14 @@ bool LoadFBXFile(
   }
   // this is always 0.01, but let's opt for clarity.
   scaleFactor = FbxSystemUnit::m.GetConversionFactorFrom(FbxSystemUnit::cm);
-FbxNode* rootNode = pScene->GetRootNode();
-  ReadNodeHierarchy(raw, pScene, rootNode->GetChild(0), 0, "");
-  ReadNodeAttributes(raw, pScene, rootNode->GetChild(0), textureLocations);
- // ReadNodeHierarchy(raw, pScene, pScene->GetRootNode(), 0, "");
- // ReadNodeAttributes(raw, pScene, pScene->GetRootNode(), textureLocations);
+  FbxNode* rootNode = pScene->GetRootNode();
+  if (rootNode->GetChildCount() > 1) {
+    ReadNodeHierarchy(raw, pScene, rootNode, 0, "");
+    ReadNodeAttributes(raw, pScene, rootNode, textureLocations);
+  } else {
+    ReadNodeHierarchy(raw, pScene, rootNode->GetChild(0), 0, "");
+    ReadNodeAttributes(raw, pScene, rootNode->GetChild(0), textureLocations);
+  }
   ReadAnimations(raw, pScene, options);
 
   pScene->Destroy();
