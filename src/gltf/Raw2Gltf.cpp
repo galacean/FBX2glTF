@@ -757,7 +757,7 @@ ModelData* Raw2Gltf(
     }
   }
 
-  const SceneData& rootScene = *gltf->scenes.hold(new SceneData(DEFAULT_SCENE_NAME));
+  SceneData& rootScene = *gltf->scenes.hold(new SceneData(DEFAULT_SCENE_NAME));
   const std::vector<long> ids =raw.GetRootNode();
   
   for (size_t i = 0; i < ids.size(); i++) {
