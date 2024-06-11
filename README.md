@@ -156,6 +156,8 @@ Your development environment will need to have:
 - python 3.\* and associated pip3/pip command
 - zstd
 
+You can use docker image: amd64/centos:7.9.2009
+
 Then, compilation on Unix machines will look something like:
 
 ```
