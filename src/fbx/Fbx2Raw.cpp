@@ -661,7 +661,7 @@ static void ReadNodeAttributes(
  */
 static FbxVector4 computeLocalScale(FbxNode* pNode, FbxTime pTime = FBXSDK_TIME_INFINITE) {
   const FbxVector4 lScale = pNode->EvaluateLocalTransform(pTime).GetS();
-
+  
   if (pNode->GetParent() == nullptr ||
       pNode->GetTransform().GetInheritType() != FbxTransform::eInheritRrs) {
     return lScale;
@@ -717,7 +717,8 @@ static void ReadNodeHierarchy(
   const FbxAMatrix localTransform = pNode->EvaluateLocalTransform();
   const FbxVector4 localTranslation = localTransform.GetT();
   const FbxQuaternion localRotation = localTransform.GetQ();
-  const FbxVector4 localScaling = computeLocalScale(pNode);
+  const FbxVector4 localScaling = localTransform.GetS();
+
 
   node.translation = toVec3f(localTranslation) * scaleFactor;
   node.rotation = toQuatf(localRotation);
@@ -839,6 +840,10 @@ static void ReadAnimations(RawModel& raw, FbxScene* pScene, const GltfOptions& o
       bool hasScale = !!scalingCurveNode;
       bool hasMorphs = false;
 
+      if (verboseOutput) {
+        fmt::printf("hasScale: %d, hasTranslation: %d, hasRotation: %d, nodeName: %s\n", hasScale, hasTranslation, hasRotation, pNode->GetName());
+      }
+      
       FbxMesh* mesh = pNode->GetMesh();
       if (mesh) {
         int deformerCount = mesh->GetDeformerCount(FbxDeformer::eBlendShape);
